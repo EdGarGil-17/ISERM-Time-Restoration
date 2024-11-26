@@ -1,0 +1,6 @@
+Gabor Patches Generator:
+https://www.cogsci.nl/pages/gabor-generator.php?option=com_content&view=article&Itemid=63&id=50&generate=yes&orient=90&size=96&env=none&std=12&freq=0.08&phase=0&red0=128&green0=128&blue0=128&red1=255&green1=255&blue1=255&red2=0&green2=0&blue2=0
+
+Settings
+- Frequency (0.01 low, 0.043 mid, 0.084 high)
+- Envelope: Rectangular
