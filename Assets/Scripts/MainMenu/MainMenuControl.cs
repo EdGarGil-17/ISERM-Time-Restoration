@@ -10,14 +10,18 @@ public class MainMenuControl : MonoBehaviour
     //UI Variables
     public GameObject menuPage;
     public GameObject settingsPage;
+    public TMP_InputField userIDInputField;
+    private string currentUserID = "";
+    public GameObject keyboard;
+    public GameObject errorText;
 
     //Player Prefs KEYS
-    private const string ScrollSpeedKey = "ScrollSpeed";
-    private const string StimulusThicknessKey = "StimulusThickness";
-    private const string StimulusDistanceKey = "StimulusDistance";
-    private const string StimulusPositionKey = "StimulusPosition";
-    private const string StimulusFrequencyKey = "StimulusFrequency";
-    private const string StimulusAlphaKey = "StimulusTransparency";
+    private const string ScrollSpeedKey = "_ScrollSpeed";
+    private const string StimulusThicknessKey = "_StimulusThickness";
+    private const string StimulusDistanceKey = "_StimulusDistance";
+    private const string StimulusPositionKey = "_StimulusPosition";
+    private const string StimulusFrequencyKey = "_StimulusFrequency";
+    private const string StimulusAlphaKey = "_StimulusTransparency";
 
     //Stimulus Speed vairables
     public TMP_Text speedText; //Display for the speed value
@@ -47,21 +51,45 @@ public class MainMenuControl : MonoBehaviour
     //Stimulus Frequency
     public TMP_Dropdown frequencyDropdown;
 
+    public void Awake()
+    {
+        
+    }
+
     private void Start()
     {
+
+        if (Singleton.Instance.gameStarted == true)
+        {
+            userIDInputField.text = Singleton.Instance.userID;
+        }
+        else
+        {
+            //Start with default settings and empty inout field
+            ApplyDefaultSettings();
+            userIDInputField.text = "";
+        }
+
         menuPage.SetActive(true);
         settingsPage.SetActive(false);
 
+        // Add listeners for sliders and dropdowns
+        distanceSlider.onValueChanged.AddListener(OnSliderValueChanged);
+        possSlider.onValueChanged.AddListener(OnPossSliderValueChanged);
+        alphaSlider.onValueChanged.AddListener(OnAlphaSliderValueChanged);
+        frequencyDropdown.onValueChanged.AddListener(OnFrequencyChanged);
+
+        /**
         //Load the saved speed or use a default value
-        scrollSpeed = PlayerPrefs.GetFloat(ScrollSpeedKey, 5f); //Default is 5
-        stimThickness = PlayerPrefs.GetInt(StimulusThicknessKey, 5); //Default is 5
-        float savedValue = PlayerPrefs.GetFloat(StimulusDistanceKey, 1.0f); //Default is 1.0
+        scrollSpeed = PlayerPrefs.GetFloat(userIDInputField.text + ScrollSpeedKey, 5f); //Default is 5
+        stimThickness = PlayerPrefs.GetInt(userIDInputField.text + StimulusThicknessKey, 5); //Default is 5
+        float savedValue = PlayerPrefs.GetFloat(userIDInputField.text + StimulusDistanceKey, 1.0f); //Default is 1.0
         distanceSlider.value = savedValue;
-        float savedPossValue = PlayerPrefs.GetFloat(StimulusPositionKey, 0.0f); //Default is 1.0
+        float savedPossValue = PlayerPrefs.GetFloat(userIDInputField.text + StimulusPositionKey, 0.0f); //Default is 1.0
         possSlider.value = savedPossValue;
-        float savedAlphaValue = PlayerPrefs.GetFloat(StimulusAlphaKey, 1f); //Default is 0
+        float savedAlphaValue = PlayerPrefs.GetFloat(userIDInputField.text + StimulusAlphaKey, 1f); //Default is 0
         alphaSlider.value = savedAlphaValue;
-        int savedFrequency = PlayerPrefs.GetInt(StimulusFrequencyKey, 0); //Default to 0 (Low)
+        int savedFrequency = PlayerPrefs.GetInt(userIDInputField.text + StimulusFrequencyKey, 0); //Default to 0 (Low)
         frequencyDropdown.value = savedFrequency;
 
         UpdateSpeedText();
@@ -77,7 +105,7 @@ public class MainMenuControl : MonoBehaviour
         alphaSlider.onValueChanged.AddListener(OnAlphaSliderValueChanged);
         // Add listener to save the selected value when the dropdown is changed
         frequencyDropdown.onValueChanged.AddListener(OnFrequencyChanged);
-
+        **/
 
         // Clear existing listeners to avoid duplicates
         //increaseSpeedButton.onClick.RemoveAllListeners();
@@ -92,9 +120,6 @@ public class MainMenuControl : MonoBehaviour
 
     public void IncreaseSpeed()
     {
-        // Disable the button to prevent multiple inputs
-        increaseSpeedButton.interactable = false;
-
         if (scrollSpeed < MaxSpeed)
         {
             Debug.Log("Increase button pressed");
@@ -102,9 +127,6 @@ public class MainMenuControl : MonoBehaviour
             SaveSpeed();
             UpdateSpeedText();
         }
-
-        // Re-enable the button after processing
-        increaseSpeedButton.interactable = true;
     }
 
     public void DecreaseSpeed()
@@ -119,8 +141,11 @@ public class MainMenuControl : MonoBehaviour
 
     private void SaveSpeed()
     {
-        PlayerPrefs.SetFloat(ScrollSpeedKey, scrollSpeed);
-        PlayerPrefs.Save(); //Save to disk
+        if (!string.IsNullOrEmpty(currentUserID))
+        {
+            PlayerPrefs.SetFloat(currentUserID + ScrollSpeedKey, scrollSpeed);
+            PlayerPrefs.Save();
+        }
     }
 
     private void UpdateSpeedText()
@@ -154,8 +179,11 @@ public class MainMenuControl : MonoBehaviour
 
     private void SaveThickness()
     {
-        PlayerPrefs.SetInt(StimulusThicknessKey, stimThickness);
-        PlayerPrefs.Save(); //Save to disk
+        if (!string.IsNullOrEmpty(currentUserID))
+        {
+            PlayerPrefs.SetInt(currentUserID + StimulusThicknessKey, stimThickness);
+            PlayerPrefs.Save();
+        }
     }
 
     private void UpdateThicknessText()
@@ -169,12 +197,9 @@ public class MainMenuControl : MonoBehaviour
 
     private void OnSliderValueChanged(float value)
     {
-        // Update the displayed value text
-        UpdateValueDisplayText(value);
-
-        // Save the value to PlayerPrefs
-        PlayerPrefs.SetFloat(StimulusDistanceKey, value);
+        PlayerPrefs.SetFloat(currentUserID + StimulusDistanceKey, value);
         PlayerPrefs.Save();
+        UpdateValueDisplayText(value);
     }
 
     private void UpdateValueDisplayText(float value)
@@ -188,12 +213,9 @@ public class MainMenuControl : MonoBehaviour
 
     private void OnPossSliderValueChanged(float value)
     {
-        // Update the displayed value text
-        UpdatePossValueDisplayText(value);
-
-        // Save the value to PlayerPrefs
-        PlayerPrefs.SetFloat(StimulusPositionKey, value);
+        PlayerPrefs.SetFloat(currentUserID + StimulusPositionKey, value);
         PlayerPrefs.Save();
+        UpdatePossValueDisplayText(value);
     }
 
     private void UpdatePossValueDisplayText(float value)
@@ -207,12 +229,8 @@ public class MainMenuControl : MonoBehaviour
 
     private void OnFrequencyChanged(int value)
     {
-        // Save the selected frequency to PlayerPrefs
-        PlayerPrefs.SetInt(StimulusFrequencyKey, value);
+        PlayerPrefs.SetInt(currentUserID + StimulusFrequencyKey, value);
         PlayerPrefs.Save();
-
-        // Debugging: Print the current selection
-        Debug.Log("Selected Frequency: " + frequencyDropdown.options[value].text);
     }
 
     #endregion
@@ -221,12 +239,9 @@ public class MainMenuControl : MonoBehaviour
 
     private void OnAlphaSliderValueChanged(float value)
     {
-        // Update the displayed value text
-        UpdateAlphaValueDisplayText(value);
-
-        // Save the value to PlayerPrefs
-        PlayerPrefs.SetFloat(StimulusAlphaKey, value);
+        PlayerPrefs.SetFloat(currentUserID + StimulusAlphaKey, value);
         PlayerPrefs.Save();
+        UpdateAlphaValueDisplayText(value);
     }
 
     private void UpdateAlphaValueDisplayText(float value)
@@ -238,13 +253,38 @@ public class MainMenuControl : MonoBehaviour
 
     public void StartButton()
     {
-        SceneManager.LoadScene(1);
+        //Check if the user input field is not null and has valid input
+        if (!string.IsNullOrWhiteSpace(userIDInputField?.text))
+        {
+            UpdateUserID(userIDInputField.text);
+            Singleton.Instance.userID = currentUserID;
+            Debug.Log("This is the stored ID: " + Singleton.Instance.userID);
+            Singleton.Instance.gameStarted = true;
+            Singleton.CSVManager.CreateReport();
+            errorText.SetActive(false);
+            //Load the next scene
+            SceneManager.LoadScene(1);
+        }
+        else
+        {
+            errorText.SetActive(true);
+        }
     }
 
     public void SettingsButton()
     {
-        menuPage.SetActive(false);
-        settingsPage.SetActive(true);
+        //Check if the user input field is not null and has valid input
+        if (!string.IsNullOrWhiteSpace(userIDInputField?.text))
+        {
+            UpdateUserID(userIDInputField.text);
+            errorText.SetActive(false);
+            menuPage.SetActive(false);
+            settingsPage.SetActive(true);
+        }
+        else
+        {
+            errorText.SetActive(true);
+        } 
     }
 
     public void ConfirmButton()
@@ -253,14 +293,63 @@ public class MainMenuControl : MonoBehaviour
         settingsPage.SetActive(false);
     }
 
+    private void ApplyDefaultSettings()
+    {
+        scrollSpeed = 5f;
+        stimThickness = 5;
+        distanceSlider.value = 1.0f;
+        possSlider.value = 0.0f;
+        alphaSlider.value = 100f;
+        frequencyDropdown.value = 0;
+
+        //Update UI
+        UpdateSpeedText();
+        UpdateThicknessText();
+        UpdateValueDisplayText(distanceSlider.value);
+        UpdatePossValueDisplayText(possSlider.value);
+        UpdateAlphaValueDisplayText(alphaSlider.value);
+    }
+
+    public void UpdateUserID(string newID)
+    {
+        if (!string.IsNullOrEmpty(newID))
+        {
+            currentUserID = newID;
+
+            //Load settings tied to this user ID
+            scrollSpeed = PlayerPrefs.GetFloat(currentUserID + ScrollSpeedKey, 5f);
+            stimThickness = PlayerPrefs.GetInt(currentUserID + StimulusThicknessKey, 5);
+            distanceSlider.value = PlayerPrefs.GetFloat(currentUserID + StimulusDistanceKey, 1.0f);
+            possSlider.value = PlayerPrefs.GetFloat(currentUserID + StimulusPositionKey, 0.0f);
+            alphaSlider.value = PlayerPrefs.GetFloat(currentUserID + StimulusAlphaKey, 1f);
+            frequencyDropdown.value = PlayerPrefs.GetInt(currentUserID + StimulusFrequencyKey, 0);
+
+            //Update UI
+            UpdateSpeedText();
+            UpdateThicknessText();
+            UpdateValueDisplayText(distanceSlider.value);
+            UpdatePossValueDisplayText(possSlider.value);
+            UpdateAlphaValueDisplayText(alphaSlider.value);
+        }
+        else
+        {            
+            ApplyDefaultSettings();
+        }
+    }
+
+    public void ShowKeyboard()
+    {
+        keyboard.SetActive(true);
+    }
+
+    public void HideKeyboard()
+    {
+        keyboard.SetActive(false);
+    }
 
     // Update is called once per frame
     void Update()
     {
-        //Check if the B button is pressed
-        if (OVRInput.GetDown(OVRInput.Button.Two)) //"Two" refers to the B button on the right controller
-        {
-            Debug.Log("B button pressed");
-        }
+
     }
 }
